@@ -1,0 +1,8 @@
+@base_url = http://localhost:8000/api/brawlers
+### register
+POST {{base_url}}/register
+Content-Type: application/json
+{
+    "username": "menta",
+    "password": "P@ssw0rd",
+}
