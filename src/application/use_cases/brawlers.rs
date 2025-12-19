@@ -1,6 +1,12 @@
+use crate::{
+    domain::{
+        repositories::brawlers::BrawlerRepository,
+        value_objects::brawler_model::RegisterBrawlerModel,
+    },
+    infrastructure::argon2::hash,
+};
+use anyhow::Result;
 use std::sync::Arc;
-use crate::infrastructure::argon2::hash;
-use crate::domain::repositories::brawlers::BrawlerRepository;
 
 pub struct BrawlersUseCase<T>
 where

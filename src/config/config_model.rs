@@ -15,5 +15,5 @@ pub struct DotEnvyConfig {
     pub server: Server,
     pub database: Database,
     pub secret: String,
-    pub max_crew_per_mission: u32,
+    // pub max_crew_per_mission: u32,
 }

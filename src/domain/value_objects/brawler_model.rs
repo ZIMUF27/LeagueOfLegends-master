@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::domain::entities::brawlers::RegisterBrawlerEntity;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

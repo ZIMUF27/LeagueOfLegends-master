@@ -1,5 +1,5 @@
 use anyhow::Result;
-
+use tracing::error;
 
 use crate::config::{
     config_model::{Database, DotEnvyConfig, Server},
@@ -31,7 +31,7 @@ pub fn load() -> Result<DotEnvyConfig> {
         .expect("SECRET is valid")
         .parse()?;
 
-    let config : DotEnvyConfig = DotEnvyConfig {
+    let config = DotEnvyConfig {
         server,
         database,
         secret,
@@ -47,14 +47,13 @@ pub fn get_stage() -> Stage {
     Stage::try_form(&stage_str).unwrap_or_default()
 }
 
-pub  fn get_user_secret() -> Result<String> {
-    let dotenvy_env: DotEnvyConfig = match load() {
+pub fn get_user_secret() -> Result<String> {
+    let dotenvy_env = match load() {
         Ok(env) => env,
         Err(e) => {
             error!("Failed to load ENV: {}", e);
             std::process::exit(1);
         }
     };
-    
     Ok(dotenvy_env.secret)
 }

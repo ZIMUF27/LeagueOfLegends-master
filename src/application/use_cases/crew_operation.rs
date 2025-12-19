@@ -1,45 +1,40 @@
+use crate::domain::{
+    entities::crew_memberships::CrewMemberShips,
+    repositories::{
+        crew_operation::CrewOperationRepository, mission_viewing::MissionViewingRepository,
+    },
+    value_objects::mission_statuses::MissionStatuses,
+};
+use anyhow::Result;
 use std::sync::Arc;
 
-use crate::domain::repositories::{
-    crew_operation::CrewOperationRepository, mission_viewing::MissionViewingRepository,
-    transaction_provider::TransactionProvider,
-};
-
-pub struct CrewOperationUseCase<T1, T2, T3>
+pub struct CrewOperationUseCase<T1, T2>
 where
     T1: CrewOperationRepository + Send + Sync,
     T2: MissionViewingRepository + Send + Sync,
-    T3: TransactionProvider + Send + Sync,// just a placeholder for the transaction provider, not necessarily.
 {
     crew_operation_repository: Arc<T1>,
     mission_viewing_repository: Arc<T2>,
-    tx: Arc<T3>,
 }
 
-impl<T1, T2, T3> CrewOperationUseCase<T1, T2, T3>
+impl<T1, T2> CrewOperationUseCase<T1, T2>
 where
     T1: CrewOperationRepository + Send + Sync + 'static,
     T2: MissionViewingRepository + Send + Sync,
-    T3: TransactionProvider + Send + Sync,
 {
-    pub fn new(
-        crew_operation_repository: Arc<T1>,
-        mission_viewing_repository: Arc<T2>,
-        tx: Arc<T3>,
-    ) -> Self {
+    pub fn new(crew_operation_repository: Arc<T1>, mission_viewing_repository: Arc<T2>) -> Self {
         Self {
             crew_operation_repository,
             mission_viewing_repository,
-            tx,
         }
     }
 
+    pub async fn join(&self, mission_id: i32, brawler_id: i32) -> Result<()> {
+        let max_crew_per_mission = std::env::var("MAX_CREW_PER_MISSION")
+            .expect("missing value")
+            .parse()?;
 
-       pub async fn join(&self, mission_id: i32, brawler_id: i32) -> Result<()> {
-        let mission = self
-            .mission_viewing_repository
-            .view_detail(mission_id)
-            .await?;
+        let mission = self.mission_viewing_repository.get_one(mission_id).await?;
 
         let crew_count = self
             .mission_viewing_repository
@@ -51,7 +46,7 @@ where
         if !mission_status_condition {
             return Err(anyhow::anyhow!("Mission is not joinable"));
         }
-             let crew_count_condition = crew_count < MAX_CREW_PER_MISSION;
+        let crew_count_condition = crew_count < max_crew_per_mission;
         if !crew_count_condition {
             return Err(anyhow::anyhow!("Mission is full"));
         }
@@ -64,21 +59,16 @@ where
             .await?;
 
         Ok(())
-    
     }
 
-     pub async fn leave(&self, mission_id: i32, brawler_id: i32) -> Result<()> {
-        let mission = self
-            .mission_viewing_repository
-            .view_detail(mission_id)
-            .await?;
+    pub async fn leave(&self, mission_id: i32, brawler_id: i32) -> Result<()> {
+        let mission = self.mission_viewing_repository.get_one(mission_id).await?;
 
         let leaving_condition = mission.status == MissionStatuses::Open.to_string()
             || mission.status == MissionStatuses::Failed.to_string();
         if !leaving_condition {
             return Err(anyhow::anyhow!("Mission is not leavable"));
         }
-            
         self.crew_operation_repository
             .leave(CrewMemberShips {
                 mission_id,
@@ -88,7 +78,4 @@ where
 
         Ok(())
     }
-  
-
-    pub async fn insert_and_delete_transaction() {}
 }

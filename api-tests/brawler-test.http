@@ -1,8 +1,30 @@
-@base_url = http://localhost:8000/api/brawlers
+
+@username = menta
+
 ### register
-POST {{base_url}}/register
+POST http://127.0.0.1:8000/api/brawler/register
 Content-Type: application/json
+
 {
     "username": "menta",
-    "password": "P@ssw0rd",
+    "password": "banana"
+}
+
+### login
+POST http://127.0.0.1:8000/api/authentication/login
+Content-Type: application/json
+
+{
+    "username": "{{username}}",
+    "password": "banana"
+}
+
+### add mission
+POST http://127.0.0.1:8000/api/mission-management/missions
+Content-Type: application/json
+
+{
+    "title": "First Mission",
+    "description": "This is the first mission.",
+    "reward": 100
 }

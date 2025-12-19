@@ -1,4 +1,8 @@
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
+use std::fmt::Display;
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq)]
 pub enum MissionStatuses {
     #[default]
     Open,

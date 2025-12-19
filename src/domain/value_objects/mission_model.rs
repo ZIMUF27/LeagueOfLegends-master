@@ -1,3 +1,11 @@
+use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
+
+use crate::domain::{
+    entities::missions::{AddMissionEntity, EditMissionEntity},
+    value_objects::mission_statuses::MissionStatuses,
+};
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MissionModel {
     pub id: i32,
@@ -10,11 +18,12 @@ pub struct MissionModel {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AddMissionModel {
     pub name: String,
     pub description: Option<String>,
 }
+
 impl AddMissionModel {
     pub fn to_entity(&self, chief_id: i32) -> AddMissionEntity {
         AddMissionEntity {
@@ -26,18 +35,17 @@ impl AddMissionModel {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EditMissionModel {
     pub name: Option<String>,
     pub description: Option<String>,
-    pub status: Option<String>,
 }
+
 impl EditMissionModel {
     pub fn to_entity(&self, chief_id: i32) -> EditMissionEntity {
         EditMissionEntity {
             name: self.name.clone(),
             description: self.description.clone(),
-            status: self.status.clone(),
             chief_id,
         }
     }

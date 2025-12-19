@@ -1,5 +1,14 @@
+use std::sync::Arc;
 
-  pub struct MissionOperationUseCase<T1, T2>
+use anyhow::Result;
+
+use crate::domain::{
+    repositories::{
+        mission_operation::MissionOperationRepository, mission_viewing::MissionViewingRepository,
+    },
+    value_objects::mission_statuses::MissionStatuses,
+};
+pub struct MissionOperationUseCase<T1, T2>
 where
     T1: MissionOperationRepository + Send + Sync,
     T2: MissionViewingRepository + Send + Sync,
@@ -13,10 +22,7 @@ where
     T1: MissionOperationRepository + Send + Sync,
     T2: MissionViewingRepository + Send + Sync,
 {
-     pub fn new(
-mission_operation_repository: Arc<T1>, 
-missiom_viewing_repository: Arc<T2>
-    ) -> Self {
+    pub fn new(mission_operation_repository: Arc<T1>, missiom_viewing_repository: Arc<T2>) -> Self {
         Self {
             mission_operation_repository,
             missiom_viewing_repository,
@@ -24,74 +30,62 @@ missiom_viewing_repository: Arc<T2>
     }
 
     pub async fn in_progress(&self, mission_id: i32, chief_id: i32) -> Result<i32> {
-    let mission = self
-        .missiom_viewing_repository
-        .view_detail(mission_id)
-        .await?;
+        let mission = self.missiom_viewing_repository.get_one(mission_id).await?;
 
-    let crew_count = self
-        .missiom_viewing_repository
-        .crew_counting(mission_id)
-        .await?;
+        let crew_count = self
+            .missiom_viewing_repository
+            .crew_counting(mission_id)
+            .await?;
 
-    let is_status_open_or_fail = mission.status == MissionStatuses::Open.to_string()
+        let is_status_open_or_fail = mission.status == MissionStatuses::Open.to_string()
             || mission.status == MissionStatuses::Failed.to_string();
-    let update_condition = is_status_open_or_fail
+
+        let max_crew_per_mission = std::env::var("MAX_CREW_PER_MISSION")
+            .expect("missing value")
+            .parse()?;
+
+        let update_condition = is_status_open_or_fail
             && crew_count > 0
-            && crew_count < MAX_CREW_PER_MISSION
+            && crew_count < max_crew_per_mission
             && mission.chief_id == chief_id;
-    if !update_condition {
-        return Err(anyhow::anyhow!("Invalid condition to change stages!"));
-    }
+        if !update_condition {
+            return Err(anyhow::anyhow!("Invalid condition to change stages!"));
+        }
 
-    let result = self
-        .mission_operation_repository
-        .in_progress(mission_id, chief_id)
-        .await?;
-    Ok(result)
+        let result = self
+            .mission_operation_repository
+            .to_progress(mission_id, chief_id)
+            .await?;
+        Ok(result)
     }
-
     pub async fn to_completed(&self, mission_id: i32, chief_id: i32) -> Result<i32> {
-    let mission = self
-        .missiom_viewing_repository
-        .view_detail(mission_id)
-        .await?;
+        let mission = self.missiom_viewing_repository.get_one(mission_id).await?;
 
-    let update_condition = mission.status == MissionStatuses::InProgress.to_string()
-        && mission.chief_id == chief_id;
-    if !update_condition {
-        return Err(anyhow::anyhow!("Invalid condition to change stages!"));
+        let update_condition = mission.status == MissionStatuses::InProgress.to_string()
+            && mission.chief_id == chief_id;
+        if !update_condition {
+            return Err(anyhow::anyhow!("Invalid condition to change stages!"));
+        }
+        let result = self
+            .mission_operation_repository
+            .to_completed(mission_id, chief_id)
+            .await?;
+
+        Ok(result)
     }
+    pub async fn to_failed(&self, mission_id: i32, chief_id: i32) -> Result<i32> {
+        let mission = self.missiom_viewing_repository.get_one(mission_id).await?;
 
-     let result = self
-        .mission_operation_repository
-        .to_completed(mission_id, chief_id)
-        .await?;
+        let update_condition = mission.status == MissionStatuses::InProgress.to_string()
+            && mission.chief_id == chief_id;
+        if !update_condition {
+            return Err(anyhow::anyhow!("Invalid condition to change stages!"));
+        }
+        let result = self
+            .mission_operation_repository
+            .to_failed(mission_id, chief_id)
+            .await?;
 
-    Ok(result)
-}
-
-pub async fn to_failed(&self, mission_id: i32, chief_id: i32) -> Result<i32> {
-    let mission = self
-        .missiom_viewing_repository
-        .view_detail(mission_id)
-        .await?;
-
-    let update_condition = mission.status == MissionStatuses::InProgress.to_string()
-        && mission.chief_id == chief_id;
-    if !update_condition {
-        return Err(anyhow::anyhow!("Invalid condition to change stages!"));
+        Ok(result)
     }
-
-   
-    let result = self
-        .mission_operation_repository
-        .to_failed(mission_id, chief_id)
-        .await?;
-
-    Ok(result)
-
 }
-
-}
-
