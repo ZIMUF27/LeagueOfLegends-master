@@ -1,3 +1,2 @@
-# LeagueOfLegends-master
-# LeagueOfLegends-master
-# LeagueOfLegends-master
+Internet Programming Example
+Semester 2 / 2025
